@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Dash - Test Your Reflexes!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            border: 3px solid #fff;
+        }
+        
+        canvas {
+            display: block;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .game-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            pointer-events: auto;
+        }
+        
+        .level-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-shadow: 0 0 10px #4ecdc4;
+            margin-bottom: 5px;
+        }
+        
+        .score-display {
+            font-size: 16px;
+            color: #ff6b6b;
+            text-shadow: 0 0 5px #ff6b6b;
+        }
+        
+        .instruction {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+            font-size: 18px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 25px;
+            border: 2px solid #4ecdc4;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+        
+        .progress-bar {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            right: 20px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 4px;
+        }
+        
+        .level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #4ecdc4;
+            display: none;
+            pointer-events: auto;
+        }
+        
+        .level-complete h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        
+        .level-stats {
+            margin: 15px 0;
+            font-size: 16px;
+        }
+        
+        .next-btn {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .next-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(76, 205, 196, 0.5);
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #ff6b6b;
+            display: none;
+            pointer-events: auto;
+        }
+        
+        .game-over h2 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .retry-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+        
+        .perfect-timing {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4ecdc4;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #4ecdc4;
+            opacity: 0;
+            pointer-events: none;
+            animation: perfectShow 1s ease-out;
+        }
+        
+        @keyframes perfectShow {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .touch-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: rgba(76, 205, 196, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            border-top: 2px solid rgba(76, 205, 196, 0.3);
+            pointer-events: auto;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .touch-area:active {
+            background: rgba(76, 205, 196, 0.3);
+        }
+        
+        .best-score {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            color: #45b7d1;
+            font-size: 14px;
+            text-align: right;
+        }
+        
+        @media (max-width: 500px) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="game-header">
+                <div class="level-display">Level <span id="currentLevel">1</span></div>
+                <div class="score-display">Score: <span id="currentScore">0</span></div>
+            </div>
+            
+            <div class="best-score">
+                Best: Level <span id="bestLevel">1</span><br>
+                Score: <span id="bestScore">0</span>
+            </div>
+            
+            <div class="instruction" id="instruction">
+                TAP TO JUMP!<br>
+                <small>Perfect timing = bonus points</small>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="touch-area" id="touchArea">
+                🚀 TAP ANYWHERE TO JUMP 🚀<br>
+                <small style="opacity: 0.8;">Perfect timing = bonus points!</small>
+            </div>
+        </div>
+        
+        <div class="level-complete" id="levelComplete">
+            <h2>🎉 LEVEL COMPLETE! 🎉</h2>
+            <div class="level-stats">
+                <div>Perfect Jumps: <span id="perfectJumps">0</span></div>
+                <div>Time Bonus: +<span id="timeBonus">0</span></div>
+                <div>Level Score: <span id="levelScore">0</span></div>
+            </div>
+            <button class="next-btn" onclick="nextLevel()">NEXT LEVEL ➤</button>
+            <button class="retry-btn" onclick="shareProgress()">SHARE PROGRESS</button>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>💥 GAME OVER 💥</h2>
+            <div class="level-stats">
+                <div>You reached: <strong>Level <span id="finalLevel">1</span></strong></div>
+                <div>Final Score: <span id="finalScore">0</span></div>
+                <div id="newRecord" style="color: #4ecdc4; font-weight: bold; display: none;">🏆 NEW RECORD! 🏆</div>
+            </div>
+            <button class="retry-btn" onclick="restartLevel()">TRY AGAIN</button>
+            <button class="next-btn" onclick="shareScore()">SHARE SCORE</button>
+        </div>
+        
+        <div class="perfect-timing" id="perfectTiming">PERFECT! +50</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let game = {
+            level: 1,
+            score: 0,
+            bestLevel: parseInt(localStorage.getItem('reactionDashBestLevel') || '1'),
+            bestScore: parseInt(localStorage.getItem('reactionDashBestScore') || '0'),
+            player: {
+                x: 50,
+                y: 450,
+                width: 30,
+                height: 30,
+                velocityY: 0,
+                onGround: true,
+                jumpPower: 15
+            },
+            obstacles: [],
+            particles: [],
+            gameRunning: true,
+            levelStartTime: 0,
+            levelDuration: 0,
+            perfectJumps: 0,
+            levelProgress: 0,
+            targetProgress: 100
+        };
+        
+        // Level configurations
+        const levelConfigs = [
+            // Level 1-5: Basic obstacles
+            { obstacles: [{x: 200, width: 30, gap: 0}], speed: 2, duration: 3000 },
+            { obstacles: [{x: 180, width: 30, gap: 0}, {x: 300, width: 30, gap: 0}], speed: 2, duration: 4000 },
+            { obstacles: [{x: 160, width: 40, gap: 0}, {x: 280, width: 30, gap: 0}, {x: 380, width: 35, gap: 0}], speed: 2.5, duration: 4500 },
+            { obstacles: [{x: 150, width: 25, gap: 0}, {x: 220, width: 25, gap: 0}, {x: 290, width: 25, gap: 0}, {x: 360, width: 25, gap: 0}], speed: 3, duration: 5000 },
+            { obstacles: [{x: 140, width: 30, gap: 0}, {x: 200, width: 20, gap: 0}, {x: 250, width: 20, gap: 0}, {x: 300, width: 30, gap: 0}, {x: 380, width: 25, gap: 0}], speed: 3, duration: 5500 },
+            
+            // Level 6-10: Moving obstacles
+            { obstacles: [{x: 200, width: 30, gap: 0, moving: true, range: 100}], speed: 3, duration: 6000 },
+            { obstacles: [{x: 150, width: 25, gap: 0}, {x: 280, width: 30, gap: 0, moving: true, range: 80}], speed: 3.5, duration: 6000 },
+            { obstacles: [{x: 140, width: 20, gap: 0, moving: true, range: 60}, {x: 240, width: 20, gap: 0}, {x: 340, width: 20, gap: 0, moving: true, range: 60}], speed: 3.5, duration: 6500 },
+            { obstacles: [{x: 120, width: 25, gap: 0}, {x: 200, width: 15, gap: 0, moving: true, range: 40}, {x: 260, width: 15, gap: 0, moving: true, range: 40}, {x: 340, width: 25, gap: 0}], speed: 4, duration: 7000 },
+            { obstacles: [{x: 110, width: 20, gap: 0, moving: true, range: 50}, {x: 180, width: 15, gap: 0}, {x: 220, width: 15, gap: 0}, {x: 260, width: 15, gap: 0}, {x: 320, width: 20, gap: 0, moving: true, range: 50}], speed: 4, duration: 7500 },
+            
+            // Level 11-15: Narrow gaps
+            { obstacles: [{x: 150, width: 60, gap: 35}, {x: 300, width: 50, gap: 30}], speed: 4, duration: 8000 },
+            { obstacles: [{x: 130, width: 70, gap: 40}, {x: 250, width: 40, gap: 25}, {x: 350, width: 60, gap: 35}], speed: 4.5, duration: 8000 },
+            { obstacles: [{x: 120, width: 50, gap: 30}, {x: 200, width: 45, gap: 25}, {x: 280, width: 55, gap: 32}, {x: 360, width: 40, gap: 25}], speed: 4.5, duration: 8500 },
+            { obstacles: [{x: 110, width: 65, gap: 35, moving: true, range: 30}, {x: 230, width: 50, gap: 28}, {x: 320, width: 60, gap: 33}], speed: 5, duration: 9000 },
+            { obstacles: [{x: 100, width: 45, gap: 25}, {x: 170, width: 40, gap: 22}, {x: 240, width: 50, gap: 28}, {x: 310, width: 45, gap: 25}, {x: 380, width: 40, gap: 22}], speed: 5, duration: 9500 },
+            
+            // Level 16-20: Fast and complex
+            { obstacles: [{x: 90, width: 30, gap: 0, moving: true, range: 80}, {x: 180, width: 25, gap: 0, moving: true, range: 60}, {x: 270, width: 35, gap: 0}, {x: 350, width: 30, gap: 0, moving: true, range: 70}], speed: 5.5, duration: 10000 },
+            { obstacles: [{x: 80, width: 40, gap: 20}, {x: 150, width: 20, gap: 0, moving: true, range: 40}, {x: 200, width: 35, gap: 18}, {x: 270, width: 25, gap: 0}, {x: 330, width: 45, gap: 22}, {x: 400, width: 30, gap: 0}], speed: 5.5, duration: 10500 },
+            { obstacles: [{x: 70, width: 35, gap: 18, moving: true, range: 50}, {x: 140, width: 20, gap: 0}, {x: 180, width: 30, gap: 15}, {x: 240, width: 25, gap: 0, moving: true, range: 35}, {x: 300, width: 40, gap: 20}, {x: 370, width: 35, gap: 18}], speed: 6, duration: 11000 },
+            { obstacles: [{x: 60, width: 25, gap: 0, moving: true, range: 60}, {x: 120, width: 30, gap: 15}, {x: 180, width: 20, gap: 0, moving: true, range: 40}, {x: 230, width: 35, gap: 18}, {x: 290, width: 25, gap: 0}, {x: 340, width: 40, gap: 20, moving: true, range: 45}], speed: 6, duration: 11500 },
+            { obstacles: [{x: 50, width: 30, gap: 15, moving: true, range: 70}, {x: 110, width: 20, gap: 0}, {x: 150, width: 25, gap: 12}, {x: 200, width: 30, gap: 15, moving: true, range: 50}, {x: 260, width: 20, gap: 0}, {x: 300, width: 35, gap: 18}, {x: 360, width: 25, gap: 12, moving: true, range: 40}], speed: 6.5, duration: 12000 }
+        ];
+        
+        // Initialize level
+        function initLevel() {
+            const config = levelConfigs[Math.min(game.level - 1, levelConfigs.length - 1)] || 
+                          levelConfigs[levelConfigs.length - 1];
+            
+            // Reset player
+            game.player.y = 450;
+            game.player.velocityY = 0;
+            game.player.onGround = true;
+            
+            // Clear arrays
+            game.obstacles = [];
+            game.particles = [];
+            
+            // Create obstacles
+            config.obstacles.forEach((obstacleConfig, index) => {
+                const obstacle = {
+                    x: obstacleConfig.x,
+                    y: 480,
+                    width: obstacleConfig.width,
+                    height: 120,
+                    gap: obstacleConfig.gap || 0,
+                    speed: config.speed,
+                    moving: obstacleConfig.moving || false,
+                    range: obstacleConfig.range || 0,
+                    direction: 1,
+                    originalX: obstacleConfig.x,
+                    passed: false
+                };
+                game.obstacles.push(obstacle);
+            });
+            
+            // Reset level stats
+            game.levelStartTime = Date.now();
+            game.levelDuration = config.duration;
+            game.perfectJumps = 0;
+            game.levelProgress = 0;
+            game.targetProgress = 100;
+            game.gameRunning = true;
+            
+            // Hide menus
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('instruction').style.display = 'block';
+            
+            updateUI();
+        }
+        
+        // Create particle effect
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: Math.random() * -8 - 2,
+                    life: 1,
+                    color: color,
+                    size: Math.random() * 6 + 2
+                });
+            }
+        }
+        
+        // Jump function
+        function jump() {
+            if (!game.gameRunning) return;
+            
+            if (game.player.onGround) {
+                game.player.velocityY = -game.player.jumpPower;
+                game.player.onGround = false;
+                
+                // Check for perfect timing
+                checkPerfectTiming();
+                
+                // Create jump particles
+                createParticles(
+                    game.player.x + game.player.width / 2,
+                    game.player.y + game.player.height,
+                    '#4ecdc4',
+                    5
+                );
+                
+                // Hide instruction after first jump
+                document.getElementById('instruction').style.display = 'none';
+            }
+        }
+        
+        // Check for perfect timing
+        function checkPerfectTiming() {
+            const perfectZone = 25; // pixels
+            let isPerfect = false;
+            
+            game.obstacles.forEach(obstacle => {
+                const playerCenter = game.player.x + game.player.width / 2;
+                const obstacleLeft = obstacle.x;
+                const obstacleRight = obstacle.x + obstacle.width;
+                const gapStart = obstacle.x + (obstacle.width - obstacle.gap) / 2;
+                const gapEnd = gapStart + obstacle.gap;
+                
+                // Check if player is near obstacle
+                if (Math.abs(playerCenter - obstacleLeft) < perfectZone || 
+                    Math.abs(playerCenter - obstacleRight) < perfectZone ||
+                    (obstacle.gap > 0 && (Math.abs(playerCenter - gapStart) < perfectZone || Math.abs(playerCenter - gapEnd) < perfectZone))) {
+                    isPerfect = true;
+                }
+            });
+            
+            if (isPerfect) {
+                game.perfectJumps++;
+                game.score += 50;
+                showPerfectTiming();
+                createParticles(
+                    game.player.x + game.player.width / 2,
+                    game.player.y,
+                    '#ffff00',
+                    15
+                );
+            }
+        }
+        
+        // Show perfect timing effect
+        function showPerfectTiming() {
+            const perfect = document.getElementById('perfectTiming');
+            perfect.style.display = 'block';
+            perfect.style.animation = 'none';
+            setTimeout(() => {
+                perfect.style.animation = 'perfectShow 1s ease-out';
+            }, 10);
+            setTimeout(() => {
+                perfect.style.display = 'none';
+            }, 1000);
+        }
+        
+        // Update game
+        function update() {
+            if (!game.gameRunning) return;
+            
+            // Update player physics
+            game.player.velocityY += 0.8; // gravity
+            game.player.y += game.player.velocityY;
+            
+            // Ground collision
+            if (game.player.y >= 450) {
+                game.player.y = 450;
+                game.player.velocityY = 0;
+                game.player.onGround = true;
+            }
+            
+            // Update obstacles
+            game.obstacles.forEach(obstacle => {
+                // Move obstacles
+                obstacle.x -= obstacle.speed;
+                
+                // Moving obstacle logic
+                if (obstacle.moving) {
+                    obstacle.x += Math.sin(Date.now() * 0.003) * obstacle.range * 0.02;
+                }
+                
+                // Mark as passed
+                if (!obstacle.passed && obstacle.x + obstacle.width < game.player.x) {
+                    obstacle.passed = true;
+                    game.score += 10;
+                }
+                
+                // Collision detection
+                if (game.player.x < obstacle.x + obstacle.width &&
+                    game.player.x + game.player.width > obstacle.x &&
+                    game.player.y < obstacle.y + obstacle.height &&
+                    game.player.y + game.player.height > obstacle.y) {
+                    
+                    // Check if player is in gap
+                    if (obstacle.gap > 0) {
+                        const gapStart = obstacle.y + (obstacle.height - obstacle.gap) / 2;
+                        const gapEnd = gapStart + obstacle.gap;
+                        
+                        if (game.player.y >= gapStart && game.player.y + game.player.height <= gapEnd) {
+                            return; // Player is in gap, no collision
+                        }
+                    }
+                    
+                    // Collision occurred
+                    gameOver();
+                    return;
+                }
+            });
+            
+            // Update particles
+            game.particles.forEach((particle, index) => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.3;
+                particle.life -= 0.02;
+                
+                if (particle.life <= 0) {
+                    game.particles.splice(index, 1);
+                }
+            });
+            
+            // Update level progress
+            const elapsed = Date.now() - game.levelStartTime;
+            game.levelProgress = Math.min((elapsed / game.levelDuration) * 100, 100);
+            
+            // Check level completion
+            if (game.levelProgress >= 100) {
+                levelComplete();
+            }
+            
+            updateUI();
+        }
+        
+        // Draw game
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ground
+            ctx.fillStyle = '#2a2a4a';
+            ctx.fillRect(0, 480, canvas.width, 120);
+            
+            // Draw ground line
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 480);
+            ctx.lineTo(canvas.width, 480);
+            ctx.stroke();
+            
+            // Draw obstacles
+            game.obstacles.forEach(obstacle => {
+                ctx.fillStyle = '#ff6b6b';
+                ctx.shadowColor = '#ff6b6b';
+                ctx.shadowBlur = 10;
+                
+                if (obstacle.gap > 0) {
+                    // Draw obstacle with gap
+                    const gapStart = obstacle.y + (obstacle.height - obstacle.gap) / 2;
+                    
+                    // Top part
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, gapStart - obstacle.y);
+                    
+                    // Bottom part
+                    ctx.fillRect(obstacle.x, gapStart + obstacle.gap, obstacle.width, 
+                               obstacle.y + obstacle.height - (gapStart + obstacle.gap));
+                } else {
+                    // Draw solid obstacle
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                }
+                
+                ctx.shadowBlur = 0;
+            });
+            
+            // Draw player
+            ctx.fillStyle = game.player.onGround ? '#4ecdc4' : '#45b7d1';
+            ctx.shadowColor = ctx.fillStyle;
